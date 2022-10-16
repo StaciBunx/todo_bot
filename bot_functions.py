@@ -6,9 +6,7 @@ from telegram.ext import (
     Updater,
     CommandHandler,
     MessageHandler,
-    Filters,
-    ConversationHandler,
-)
+    ConversationHandler)
 import stickers as st
 
 logging.basicConfig(filename='log.txt',
@@ -22,6 +20,7 @@ WELCOME_MENU, MAIN_MENU, CHOICE, VIEW, ADD_TASK, ADD_DATE, DONE, DELETE = range(
 
 
 def start(update, context):
+    '''Приветственная функция. Здороваемся с пользователем и предалагаем ему начать работу с ботом. Возвращает вызов меню. '''
     reply_keyboard = [['НАЧАТЬ', 'ВЫХОД']]
     markup_key = ReplyKeyboardMarkup(
         reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -35,6 +34,10 @@ def start(update, context):
 
 
 def welcome_menu(update, context):
+    '''
+    Приветственное меню с клавиатурой.
+    В зависимости от выбора пользователя либо запускается список задач и происходит вызов главного меню, либо разгоров с ботом заканчивается.
+    '''
     button = update.message.text
     button = str(button)
     if button == 'НАЧАТЬ':
@@ -51,6 +54,9 @@ def welcome_menu(update, context):
 
 
 def main_menu(update, context):
+    '''
+    Главное меню для работы с задачами.
+    '''
     reply_keyboard = [
         ['ВСЕ ЗАДАЧИ', 'ДОБАВИТЬ', 'УДАЛИТЬ', 'ВЫПОЛНЕНО', 'ВЫХОД']]
     markup_key = ReplyKeyboardMarkup(
@@ -61,9 +67,12 @@ def main_menu(update, context):
 
 
 def choice(update, context):
+    '''
+    В зависимости от выбора пользователями вызываются остальные функции для работы с задачми.
+    '''
     choice = update.message.text
     if choice == 'ВСЕ ЗАДАЧИ':
-        return view(update, context)
+        return VIEW
     if choice == 'ДОБАВИТЬ':
         update.message.reply_text("Введите текст задачи:")
         return ADD_TASK
@@ -79,6 +88,7 @@ def choice(update, context):
 
 
 def view(update, context):
+    '''Выводит весь список задач в интрефейс телеграма, возвращает главное меню для дальнейших действий.'''
     context.bot.send_message(update.effective_chat.id,
                              f'Ваш список дел ниже.')
     user_tasks = csvf.read_csv()
@@ -91,6 +101,7 @@ def view(update, context):
 
 
 def add_task(update, context):
+    '''Записывает значение задачи для добавления в словарь значений, возвращает функцию с добавляение срока/даты задачи.'''
     context.bot.send_sticker(update.message.chat.id, st.listen)
     task = update.message.text
     task = task.lower()
@@ -101,6 +112,7 @@ def add_task(update, context):
 
 
 def add_date(update, context):
+    '''Записывает значение даты для словаря, формирует словарь и передает для записи в cvs файл. Возвращает главное меню.'''
     date = update.message.text
     date = date.lower()
     context.user_data['date'] = date
@@ -117,6 +129,7 @@ def add_date(update, context):
 
 
 def delete(update, context):
+    '''Принимает запрос от пользователя и передает в функцию для удаления задачи из файлы cvs. Возвращает главное меню.'''
     task_to_del = update.message.text
     status = csvf.delete_csv(task_to_del)
     update.message.reply_text(status)
@@ -126,6 +139,7 @@ def delete(update, context):
 
 
 def done(update, context):
+    '''Принимает запрос от пользователя и передает в функцию для того, чтобы пометить задачу выполненное. Возвращает главное меню.'''
     task_to_mark = update.message.text
     status = csvf.mark_csv(task_to_mark)
     update.message.reply_text(status)
@@ -135,12 +149,10 @@ def done(update, context):
 
 
 def cancel(update, context):
-    # определяем пользователя
-    user = update.message.from_user
-    # Пишем в журнал о том, что пользователь не разговорчивый
-    # Отвечаем на отказ поговорить
+    '''
+    Функция прощается с пользователем и заврешает программу.
+    '''
     context.bot.send_sticker(update.message.chat.id, st.goodbye)
     context.bot.send_message(update.effective_chat.id,
-                             f'До встречи!'
-                             'Для начала работы нажмите /start')
+                             f'До встречи! Для начала работы нажмите /start')
     return ConversationHandler.END
